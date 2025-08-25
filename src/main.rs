@@ -29,7 +29,7 @@ fn main() {
     }
 
     let t2 = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap() - t1;
-    println!("{:?}", t2);
+    println!("duration: {:?}", t2);
 }
 
 
