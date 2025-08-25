@@ -10,15 +10,6 @@ fn main() {
     let m1 = Matrix::new_with_values(10000, 10000, 5i32);
     let m2 = Matrix::new_with_values(10000, 10000, 5i32);
 
-
-    /*
-    let Ok(result) = m1.clone() + m2.clone() else {
-        println!("Error");
-        return;
-    };
-
-     */
-
     let threads_num = std::thread::available_parallelism().unwrap();
     println!("threads: {:?}", threads_num);
 
