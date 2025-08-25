@@ -270,16 +270,16 @@ impl<T> std::fmt::Display for Matrix<T> where T: Element + std::fmt::Display
         for row in &self.v {
             write!(f, "[")?;
 
-            let mut first = true;
+            let mut first_el_in_row = true;
 
             for col in row {
-                let d = match first {
+                let d = match first_el_in_row {
                     true => {" "}
                     false => {", "}
                 };
 
                 write!(f, "{}{}", d, col)?;
-                first = false;
+                first_el_in_row = false;
             }
             writeln!(f, " ]")?;
         }
