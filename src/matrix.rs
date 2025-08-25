@@ -349,7 +349,3 @@ fn multithreaded_operation<T: Element>(matrix1: &Matrix<T>, matrix2: &Matrix<T>,
         cols: matrix1.cols
     }
 }
-
-fn operation<T: Element>(value1: T, value2: T, operation: fn(T, T) -> T) -> T {
-    operation(value1, value2)
-}
