@@ -1,5 +1,3 @@
-use crate::zero::Zero;
-
 pub trait One<V = Self> {
     fn one() -> V;
 }
