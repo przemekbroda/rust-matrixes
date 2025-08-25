@@ -68,7 +68,11 @@ impl<T: Element> Matrix<T> {
     }
 
     pub fn identity_matrix(size: usize) -> Matrix<T> {
-        let v = vec![vec![T::one(); size]; size];
+        let mut v = vec![vec![T::zero(); size]; size];
+
+        for i in 0..size {
+            v[i][i] = T::one();
+        }
 
         Matrix {
             v,
