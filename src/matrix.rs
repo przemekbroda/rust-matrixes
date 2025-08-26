@@ -246,8 +246,8 @@ impl<T: Element> Mul for Matrix<T> {
 
         for row_v1 in 0..mul_result.len() {
             for col_v2 in 0..rhs.cols {
-                for row_v2 in 0..rhs.rows {
-                    mul_result[row_v1][col_v2] += self.v[row_v1][row_v2] * rhs.v[row_v2][col_v2];
+                for col_v1 in 0..self.cols {
+                    mul_result[row_v1][col_v2] += self.v[row_v1][col_v1] * rhs.v[col_v1][col_v2];
                 }
             }
         }
@@ -356,8 +356,8 @@ impl<T: Element> MulMultiThreaded for Matrix<T>  {
                 scope.spawn(move || {
                     for row_v1 in 0..result_chunk.len() {
                         for col_v2 in 0..rhs.cols {
-                            for row_v2 in 0..rhs.rows {
-                                result_chunk[row_v1][col_v2] += self_row_chunk[row_v1][row_v2] * rhs.v[row_v2][col_v2];
+                            for col_v1 in 0..self.cols {
+                                result_chunk[row_v1][col_v2] += self_row_chunk[row_v1][col_v1] * rhs.v[col_v1][col_v2];
                             }
                         }
                     }
