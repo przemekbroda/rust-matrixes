@@ -236,32 +236,36 @@ impl<T: Element> Mul for Matrix<T> {
     type Output = Result<Matrix<T>, MatrixError>;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        if self.cols != rhs.rows {
+        if !mul_correct_size(&self, &rhs) {
             return Err(MatrixError {
-                message: "Matrices must be the same size".to_string()
+                message: "First matrix has to have same amount of rows as second matrix has columns".to_string()
             })
         }
 
-        let mut mut_result = vec![vec![T::zero(); rhs.cols]; self.rows];
+        let mut mul_result = vec![vec![T::zero(); rhs.cols]; self.rows];
 
-        for col_v2 in 0..rhs.cols {
-            for row_v1 in 0..self.rows {
-                for col_v1 in 0..self.cols {
-                    mut_result[row_v1][col_v2] += self.v[row_v1][col_v1] * rhs.v[col_v1][col_v2];
+        for row_v1 in 0..mul_result.len() {
+            for col_v2 in 0..rhs.cols {
+                for row_v2 in 0..rhs.rows {
+                    mul_result[row_v1][col_v2] += self.v[row_v1][row_v2] * rhs.v[row_v2][col_v2];
                 }
             }
         }
 
         Ok(Self {
-            v: mut_result,
+            v: mul_result,
             rows: self.rows,
             cols: rhs.cols
         })
     }
 }
 
-pub fn same_size<T: Element>(m1: &Matrix<T>, m2: &Matrix<T>) -> bool {
+fn same_size<T: Element>(m1: &Matrix<T>, m2: &Matrix<T>) -> bool {
     m1.rows == m2.rows && m1.cols == m2.cols
+}
+
+fn mul_correct_size<T: Element>(m1: &Matrix<T>, m2: &Matrix<T>) -> bool {
+    m1.cols == m2.rows
 }
 
 impl<T> std::fmt::Display for Matrix<T> where T: Element + std::fmt::Display
@@ -328,15 +332,57 @@ impl<T: Element> SubMultiThreaded for Matrix<T> {
     }
 }
 
+pub trait MulMultiThreaded<Rhs = Self> {
+    type Output;
+    fn mul_multithreaded(&self, rhs: &Rhs, threads: NonZero<usize>) -> Self::Output;
+}
+
+impl<T: Element> MulMultiThreaded for Matrix<T>  {
+    type Output = Result<Matrix<T>, MatrixError>;
+
+    fn mul_multithreaded(&self, rhs: &Self, threads: NonZero<usize>) -> Self::Output {
+        if !mul_correct_size(&self, &rhs) {
+           return Err(MatrixError {
+               message: "First matrix has to have same amount of rows as second matrix has columns".parse().unwrap()
+           })
+        }
+
+        let mut mul_result = vec![vec![T::zero(); rhs.cols]; self.rows];
+        let chunks = mul_result.len() / threads + 1;
+        let self_rows_chunks = self.v.chunks(chunks);
+
+        std::thread::scope(|scope| {
+            for (result_chunk, (self_row_chunk)) in mul_result.chunks_mut(chunks).into_iter().zip(self_rows_chunks) {
+                scope.spawn(move || {
+                    for row_v1 in 0..result_chunk.len() {
+                        for col_v2 in 0..rhs.cols {
+                            for row_v2 in 0..rhs.rows {
+                                result_chunk[row_v1][col_v2] += self_row_chunk[row_v1][row_v2] * rhs.v[row_v2][col_v2];
+                            }
+                        }
+                    }
+                });
+            }
+        });
+
+        Ok(Matrix {
+            v: mul_result,
+            rows: self.rows,
+            cols: rhs.cols
+        })
+    }
+
+}
+
 fn multithreaded_operation<T: Element>(matrix1: &Matrix<T>, matrix2: &Matrix<T>, threads: NonZero<usize>, operation: fn (T, T) -> T) -> Matrix<T> {
     let chunk_size = matrix1.rows / threads + 1;
-    let mut result = vec![vec![T::zero(); matrix1.cols]; matrix1.rows];
+    let mut operation_result = vec![vec![T::zero(); matrix1.cols]; matrix1.rows];
 
     let rows_v1 = matrix1.v.chunks(chunk_size);
     let rows_v2 = matrix2.v.chunks(chunk_size);
 
     std::thread::scope(|scope| {
-        for (result_chunk, (self_chunk, rhs_chunk)) in result.chunks_mut(chunk_size).into_iter().zip(rows_v1.zip(rows_v2)) {
+        for (result_chunk, (self_chunk, rhs_chunk)) in operation_result.chunks_mut(chunk_size).into_iter().zip(rows_v1.zip(rows_v2)) {
             scope.spawn(move || {
                 for row in 0..result_chunk.len() {
                     for col in 0..result_chunk[row].len() {
@@ -348,7 +394,7 @@ fn multithreaded_operation<T: Element>(matrix1: &Matrix<T>, matrix2: &Matrix<T>,
     });
 
     Matrix {
-        v: result,
+        v: operation_result,
         rows: matrix1.rows,
         cols: matrix1.cols
     }

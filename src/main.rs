@@ -2,22 +2,20 @@ mod matrix;
 mod zero;
 mod one;
 
-use crate::matrix::{AddMultiThreaded, Matrix, SubMultiThreaded};
+use crate::matrix::{AddMultiThreaded, Matrix, MulMultiThreaded, SubMultiThreaded};
 
-fn main() {
+fn main() { 
     let t1 = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap();
 
-    let m1 = Matrix::new_with_values(10000, 10000, 5i32);
-    let m2 = Matrix::new_with_values(10000, 10000, 5i32);
+    let m1 = Matrix::new_with_values(1000, 1000, 5i32);
+    let m2 = Matrix::new_with_values(1000, 1000, 5i32);
 
     let threads_num = std::thread::available_parallelism().unwrap();
     println!("threads: {:?}", threads_num);
 
-    for _i in 0..500 {
-        let result = m1.sub_multithreaded(&m2, threads_num).unwrap();
-        assert_eq!(0, result.get_value(9999, 9999).unwrap());
-        assert!(result.get_value(10000, 10000).is_err());
-    }
+    let result = m1.mul_multithreaded(&m2, threads_num);
+
+    println!("{:?}", result.unwrap().get_value(0, 0));
 
     let t2 = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap() - t1;
     println!("duration: {:?}", t2);
